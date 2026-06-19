@@ -28,14 +28,25 @@ jobs:
 
       - name: Run Docker container
         run: |
-          docker run -d --rm \
+          docker run -d \
             --name fit4110-iot-lab04 \
             -p 8000:8000 \
             --env-file .env.example \
             fit4110/iot-ingestion:lab04
 
       - name: Wait for service health
-        run: npx wait-on http://localhost:8000/health --timeout 30000
+        run: |
+          echo "Waiting for service..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health; then
+              echo "Service is up!"
+              exit 0
+            fi
+            echo "Attempt $i/30, retrying in 2s..."
+            sleep 2
+          done
+          echo "Service failed to start"
+          exit 1
 
       - name: Run Newman against Docker container
         run: npm run test:local
